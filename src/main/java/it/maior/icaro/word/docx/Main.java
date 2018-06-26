@@ -1,159 +1,32 @@
 package it.maior.icaro.word.docx;
 
-import org.docx4j.dml.wordprocessingDrawing.Inline;
-import org.docx4j.jaxb.Context;
-import org.docx4j.model.table.TblFactory;
-import org.docx4j.openpackaging.exceptions.Docx4JException;
-import org.docx4j.openpackaging.exceptions.InvalidFormatException;
-import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
-import org.docx4j.openpackaging.parts.WordprocessingML.BinaryPartAbstractImage;
-import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
-import org.docx4j.wml.*;
-
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.List;
-
 
 public class Main {
 
+    static String outputPath = "./OutputFiles/example.docx";
 
     public static void main(String[] args) {
-        try {
-            createDocumentPackage("./test.docx", "C:/Users/mato/Pictures/Capture.PNG");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
-    static void createDocumentPackage(String outputPath, String imagePath) {
+        DocxFileCreator dfc = new DocxFileCreator();
 
-        try {
-            WordprocessingMLPackage wordPackage = WordprocessingMLPackage.createPackage();
+        dfc.addStyledParagraphOfText("Title", "IcaroXt: From Jira to Docx");
+        dfc.addStyledParagraphOfText("Subtitle", "An experiment");
 
-            MainDocumentPart mainDocumentPart = wordPackage.getMainDocumentPart();
-            mainDocumentPart.addStyledParagraphOfText("Title", "Hello World!");
-            mainDocumentPart.addParagraphOfText("Welcome To Baeldung!");
+        dfc.addStyledParagraphOfText("Heading1", "Add an image");
+        dfc.addImage("C:/Users/mato/Pictures/Capture.PNG", "Hint");
 
-            ObjectFactory factory = Context.getWmlObjectFactory();
-            P p = factory.createP();
-            R r = factory.createR();
+        dfc.addStyledParagraphOfText("Heading1", "Paragraph");
+        dfc.addStyledParagraphOfText("Heading2", "Paragraph simple format");
+        dfc.addParagraphOfText("This element specifies the set of run properties applied to the glyph used to represent the physical location of the paragraph mark for this paragraph. This paragraph mark, being a physical character in the document, can be formatted, and therefore shall be capable of representing this formatting like any other character in the document. If this element is not present, the paragraph mark is unformatted, as with any other run of text.");
+        dfc.addStyledParagraphOfText("Heading2", "Paragraph with special format");
+        dfc.addParagraphWithConfiguration("This element specifies the set of run properties applied to the glyph used to represent the physical location of the paragraph mark for this paragraph. This paragraph mark, being a physical character in the document, can be formatted, and therefore shall be capable of representing this formatting like any other character in the document. If this element is not present, the paragraph mark is unformatted, as with any other run of text.");
 
+        dfc.addStyledParagraphOfText("Heading1", "Bullet list");
+        dfc.addParagraphOfText("This element specifies the set of run properties:");
+        dfc.addBulletParagraphOfText(1, 0, "text on top level");
+        dfc.addBulletParagraphOfText(1, 0, "more text on top level");
+        dfc.addBulletParagraphOfText(1, 1, "text on level 1");
 
-            Text t = factory.createText();
-            t.setValue("Welcome To Baeldung");
-            r.getContent().add(t);
-            p.getContent().add(r);
-            RPr rpr = factory.createRPr();
-            BooleanDefaultTrue b = new BooleanDefaultTrue();
-            rpr.setB(b);
-            rpr.setI(b);
-            rpr.setCaps(b);
-            Color red = factory.createColor();
-            red.setVal("green");
-            rpr.setColor(red);
-            r.setRPr(rpr);
-            mainDocumentPart.getContent().add(p);
-
-            File image = new File(imagePath);
-            byte[] fileContent = Files.readAllBytes(image.toPath());
-            BinaryPartAbstractImage imagePart = BinaryPartAbstractImage.createImagePart(wordPackage, fileContent);
-            Inline inline = imagePart.createImageInline("Baeldung Image", "Alt Text", 1, 2, false);
-            P Imageparagraph = addImageToParagraph(inline);
-            mainDocumentPart.getContent().add(Imageparagraph);
-
-            int writableWidthTwips = wordPackage.getDocumentModel().getSections().get(0).getPageDimensions().getWritableWidthTwips();
-            int columnNumber = 3;
-            Tbl tbl = TblFactory.createTable(1, 1, writableWidthTwips / columnNumber);
-            List<Object> rows = tbl.getContent();
-            for (Object row : rows) {
-                Tr tr = (Tr) row;
-                List<Object> cells = tr.getContent();
-                for (Object cell : cells) {
-                    Tc td = (Tc) cell;
-                    td.getContent().add(p);
-                }
-            }
-
-            mainDocumentPart.getContent().add(tbl);
-            File exportFile = new File(outputPath);
-            wordPackage.save(exportFile);
-        } catch (InvalidFormatException e) {
-            e.printStackTrace();
-        } catch (Docx4JException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    boolean isTextExist(String testText) throws Docx4JException, JAXBException {
-        File doc = new File("helloWorld.docx");
-        WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.load(doc);
-        MainDocumentPart mainDocumentPart = wordMLPackage.getMainDocumentPart();
-        String textNodesXPath = "//w:t";
-        List<Object> paragraphs = mainDocumentPart.getJAXBNodesViaXPath(textNodesXPath, true);
-        for (Object obj : paragraphs) {
-            Text text = (Text) ((JAXBElement) obj).getValue();
-            String textValue = text.getValue();
-            if (textValue != null && textValue.contains(testText)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static P addImageToParagraph(Inline inline) {
-        ObjectFactory factory = new ObjectFactory();
-        P p = factory.createP();
-        R r = factory.createR();
-        p.getContent().add(r);
-        Drawing drawing = factory.createDrawing();
-        r.getContent().add(drawing);
-        drawing.getAnchorOrInline().add(inline);
-        return p;
+        dfc.saveFileDocx(outputPath);
     }
 }
-//    public static void main(String[] args) {
-//        WordprocessingMLPackage wordPackage = null;
-//        try {
-//            wordPackage = WordprocessingMLPackage.createPackage();
-//
-//            MainDocumentPart mainDocumentPart = wordPackage.getMainDocumentPart();
-//            mainDocumentPart.addStyledParagraphOfText("Title", "Title: Jita backlog to docx document");
-//            mainDocumentPart.addStyledParagraphOfText("Subtitle", "An experiment");
-//
-//            mainDocumentPart.addStyledParagraphOfText("Heading1", "First chapter");
-//            mainDocumentPart.addParagraphOfText("Welcome To Baeldung");
-//
-//            mainDocumentPart.addStyledParagraphOfText("Heading3", "Heading3");
-//
-//            int writableWidthTwips = wordPackage.getDocumentModel().getSections().get(0).getPageDimensions().getWritableWidthTwips();
-//            int columnNumber = 3;
-//            Tbl tbl = TblFactory.createTable(3, 3, writableWidthTwips/columnNumber);
-//            List<Object> rows = tbl.getContent();
-//            for (Object row : rows) {
-//                Tr tr = (Tr) row;
-//                List<Object> cells = tr.getContent();
-//                for(Object cell : cells) {
-//                    Tc td = (Tc) cell;
-//                    td.getContent().add("CIAO");
-//                }
-//            }
-//
-//            mainDocumentPart.getContent().add(tbl);
-//
-//            File exportFile = new File("welcome.docx");
-//            wordPackage.save(exportFile);
-//        } catch (InvalidFormatException e) {
-//            e.printStackTrace();
-//        } catch (Docx4JException e) {
-//            e.printStackTrace();
-//        }
-//    }
